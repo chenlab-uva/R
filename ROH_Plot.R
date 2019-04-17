@@ -22,12 +22,12 @@ all_seg <- subset(all_seg, select = c(Chr, StartMB, StopMB))
 
 # roh segments gz file
 segments <- read.table(segments_name, header = TRUE)
-segments <- subset(segments, select = c(FID, ID, Chr, StartMB, StopMB)) #
+segments <- subset(segments, select = c(FID, ID, Chr, StartMB, StopMB)) 
 
 # roh file
 roh <- read.table(seg_name, header = TRUE)
 # 3 rd degree. Only draw the roh plots for samples with a high F_ROH (1/2^4.5)
-roh_info <- roh[roh$F_ROH > 1/(2^4.5), c("FID","ID","F_ROH")] #
+roh_info <- roh[roh$F_ROH > 1/(2^4.5), c("FID","ID","F_ROH")] 
 roh_info$FID <- as.character(roh_info$FID)
 roh_info$ID <- as.character(roh_info$ID)
 #### Can we be safer to consider both FID and IID?
