@@ -45,7 +45,7 @@ for (id in roh_id){
       geom_rect(data = all_seg, aes(xmin = StartMB, xmax = StopMB, ymin = 0, max = 0.9), fill = 'white', color = "black", size = 0.85) + 
       geom_rect(data = k, aes(xmin = StartMB, xmax = StopMB, ymin = 0, ymax = 0.9), fill = "red") + 
       geom_rect(data = all_seg, aes(xmin = StartMB, xmax = StopMB, ymin = 0, max = 0.9), color = "black", alpha = 0, size = 0.85) +
-      facet_grid(Chr ~ .) +
+      facet_grid(Chr ~ .) + scale_x_continuous(expand  = c(0, 0), limits = c(0, NA)) +
       labs(x = "Position (MB)", y = "", title = bquote(paste('Run of Homozygosity for ', .(id), ' in ', .(prefix), ' (F'['ROH']*' = ', .(f_roh), ')'))) +
       theme(
         legend.position = "none",
