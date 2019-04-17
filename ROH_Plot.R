@@ -30,13 +30,14 @@ roh <- read.table(seg_name, header = TRUE)
 roh_id <- roh$ID[roh$F_ROH > 1/(2^4.5) ]
 
 # generate plots
-postscript(paste(prefix, "roh", "rplots.ps", sep = "_"), horizontal = T)
+postscript(paste(prefix, "roh", "rplots.ps", sep = "_"), paper="letter", horizontal = T)
 for (id in roh_id){
   #' get data for 1 individual & plot
   k <- subset(segments, ID == id)
   if(nrow(k) > 0) {
     theme_set(theme_bw(base_size = 18))
     f_roh <- roh[roh$ID==id,"F_ROH"]
+#### Is there any way to start with 0 MB, i.e., getting rid of the gray margin on the left?    
     g <- ggplot() +
       geom_rect(data = all_seg, aes(xmin = StartMB, xmax = StopMB, ymin = 0, max = 0.9), fill = 'white', color = "black", size = 0.85) + 
       geom_rect(data = k, aes(xmin = StartMB, xmax = StopMB, ymin = 0, ymax = 0.9), fill = "red") + 
