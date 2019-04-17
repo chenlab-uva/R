@@ -22,24 +22,26 @@ all_seg <- subset(all_seg, select = c(Chr, StartMB, StopMB))
 
 # roh segments gz file
 segments <- read.table(segments_name, header = TRUE)
-segments <- subset(segments, select = c(ID, Chr, StartMB, StopMB))
+segments <- subset(segments, select = c(FID, ID, Chr, StartMB, StopMB))
 
 # roh file
 roh <- read.table(seg_name, header = TRUE)
 # 3 rd degree. Only draw the roh plots for samples with a high F_ROH (1/2^4.5)
-roh_id <- roh$ID[roh$F_ROH > 1/(2^4.5) ]
+roh_info <- roh[roh$F_ROH > 1/(2^4.5), c("FID","ID","F_ROH")]
+roh_info$FID <- as.character(roh_info$FID)
 #### Can we be safer to consider both FID and IID?
 #### e.g., roh_id <- roh[roh$F_ROH > 1/(2^4.5), c("FID", "ID")]
 #### and then change the for loop followed, as well as the ID in the plot to "IID in Fam FID"
 
 # generate plots
 postscript(paste(prefix, "roh", "rplots.ps", sep = "_"), paper="letter", horizontal = T)
-for (id in roh_id){
+for (i in 1:nrow(roh_info)){
   #' get data for 1 individual & plot
-  k <- subset(segments, ID == id)
+  k <- subset(segments, FID == roh_info[i,1] & ID == roh_info[i,2])
   if(nrow(k) > 0) {
     theme_set(theme_bw(base_size = 18))
-    f_roh <- roh[roh$ID==id,"F_ROH"]
+    f_roh <- roh_info[i,"F_ROH"]
+    id <- paste(k[1,1], k[1, 2], sep = "_")
 #### Is there any way to start with 0 MB, i.e., getting rid of the gray margin on the left?    
     g <- ggplot() +
       geom_rect(data = all_seg, aes(xmin = StartMB, xmax = StopMB, ymin = 0, max = 0.9), fill = 'white', color = "black", size = 0.85) + 
