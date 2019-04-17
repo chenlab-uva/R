@@ -28,6 +28,9 @@ segments <- subset(segments, select = c(ID, Chr, StartMB, StopMB))
 roh <- read.table(seg_name, header = TRUE)
 # 3 rd degree. Only draw the roh plots for samples with a high F_ROH (1/2^4.5)
 roh_id <- roh$ID[roh$F_ROH > 1/(2^4.5) ]
+#### Can we be safer to consider both FID and IID?
+#### e.g., roh_id <- roh[roh$F_ROH > 1/(2^4.5), c("FID", "ID")]
+#### and then change the for loop followed, as well as the ID in the plot to "IID in Fam FID"
 
 # generate plots
 postscript(paste(prefix, "roh", "rplots.ps", sep = "_"), paper="letter", horizontal = T)
