@@ -30,15 +30,14 @@ roh <- read.table(seg_name, header = TRUE)
 roh_info <- roh[roh$F_ROH > 1/(2^4.5), c("FID","ID","F_ROH")] 
 roh_info$FID <- as.character(roh_info$FID)
 roh_info$ID <- as.character(roh_info$ID)
-#### Can we be safer to consider both FID and IID?
-#### e.g., roh_id <- roh[roh$F_ROH > 1/(2^4.5), c("FID", "ID")]
-#### and then change the for loop followed, as well as the ID in the plot to "IID in Fam FID"
 
 # generate plots
 postscript(paste(prefix, "roh", "rplots.ps", sep = "_"), paper="letter", horizontal = T)
 
-# change part 
+#### This loop is too slow, 0.5 second per iteration/sample. 
+#### We need to consider parallel library (if all(required_packages %in% installed.packages()[,'Package'])) 
 for (i in 1:nrow(roh_info)){
+#### This loop makes roh_run_1 function, with g as return  
   #' get data for 1 individual & plot
   k <- subset(segments, FID == roh_info[i,1] & ID == roh_info[i,2])
   if(nrow(k) > 0) {
@@ -46,7 +45,6 @@ for (i in 1:nrow(roh_info)){
     f_roh <- roh_info[i,"F_ROH"]
     fid <- as.character(k[1,1])
     id <- as.character(k[1,2])
-    #### Is there any way to start with 0 MB, i.e., getting rid of the gray margin on the left?    
     g <- ggplot() +
       geom_rect(data = all_seg, aes(xmin = StartMB, xmax = StopMB, ymin = 0, max = 0.9), fill = 'white', color = "black", size = 0.85) + 
       geom_rect(data = k, aes(xmin = StartMB, xmax = StopMB, ymin = 0, ymax = 0.9), fill = "red") + 
@@ -65,4 +63,15 @@ for (i in 1:nrow(roh_info)){
     print(g)
   }
 }
+#### Here is the idea of code for parallel computing:
+#### if(all(c("parallel") %in% installed.packages()[,'Package'])){
+####   cl <- makeCluster(detectCores()/2)
+####   clusterExport(cl = cl)
+####   glist <- parLapply(cl, 1:nrow(roh_info), roh_run_1)
+####   stopCluster(cl)
+#### }else{
+####   glist <- lapply(cl, 1:nrow(roh_info), roh_run_1)
+#### }
+#### for(i in 1:nrow(roh_info)) g <- ggplot + glist[i]
+#### print(g)
 dev.off()
