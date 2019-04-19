@@ -104,13 +104,14 @@ cPalette <- Palette[c(1:(groups - 1), 10)]
 
 if(!require("ggplot2")) {
   pdf(paste(prefix, "_", "linear", "_", 10, "PCs.pdf", sep = ""))
+  pred.out$PRED_CLASS <- as.factor(pred.out$PRED_CLASS)
   plot(pred.out$PC1, pred.out$PC2, col = cPalette[pred.out$PRED_CLASS], xlab = "PC1", ylab = "PC2", pch = 16)
-  legend("topright", title = "Predicted", legend = unique(pred.out$PRED_CLASS), col = unique(cPalette[pred.out$PRED_CLASS]), pch = 16, cex = 0.5)
+  legend("topright", title = "Predicted", legend = unique(pred.out$PRED_CLASS), col = unique(cPalette[pred.out$PRED_CLASS]), pch = 16, cex = 1)
   dev.off()
   pdf("Reference.pdf")
   plot(train.phe$PC1, train.phe$PC2, col = cPalette[train.phe$Population], xlab = "PC1", ylab = "PC2", pch = 16)
   legend("topright", title = "Reported", legend = unique(train.phe$Population), 
-         col = unique(cPalette[train.phe$Population]), pch = 16, cex = 0.5)
+         col = unique(cPalette[train.phe$Population]), pch = 16, cex = 1)
   print(paste("Reference.pdf and ", prefix, "_", "linear", "_", 10, "PCs.pdf are generated.", sep = ""))
   dev.off()
   print("Done")
