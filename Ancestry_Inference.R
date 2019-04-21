@@ -44,8 +44,7 @@ tuneresult <- foreach(cost = 2^(seq(-10, 10, by = 0.5)), .combine = rbind) %dopa
   performance <- mod$performances[, c("error", "dispersion")]
   data.frame(cost = cost, performance = performance)
 }
-best.setting <- tuneresult[tuneresult$performance.error == min(tuneresult$performance.error), ]
-best.cost <- min(best.setting$cost)
+best.cost <- tuneresult[which.min(tuneresult$performance.error), "cost"]
 
 print(paste("The best cost is ", round(best.cost, 6), " after the wide grid search", sep=""))
 print(paste("Grid search with a small range, starts at", date()))
@@ -58,8 +57,7 @@ tune.more <- foreach(cost = more.cost, .combine = rbind) %dopar% {
   performance <- mod$performances[, c("error", "dispersion")]
   data.frame(cost = cost, performance = performance)
 }
-best.setting <- tune.more[tune.more$performance.error == min(tune.more$performance.error), ]
-best.cost <- min(best.setting$cost)
+best.cost <- tune.more[which.min(tune.more$performance.error), "cost"]
 print(paste("Grid search with a small range, ends at", date()))
 print(paste("The best cost is ", round(best.cost, 6), " after the small grid search", sep=""))
 # final model
