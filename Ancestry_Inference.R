@@ -33,8 +33,7 @@ if (require("doParallel")) {
   numCores <- detectCores()
   registerDoParallel(cores = round((numCores/2)))
   tuneresults <- function(cost){
-    tuneresult <- foreach(cost = cost, .combine = c) %dopar% 
-    {
+    tuneresult <- foreach(cost = cost, .combine = c) %dopar% {
       set.seed(123)
       mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", cost = cost, probability = TRUE, tunecontrol = tune.control(cross = 5))
       mod$performances[, c("error")]
