@@ -30,7 +30,9 @@ train.y <- train.phe[, "Population"]
 
 # Linear Only
 if (require("doParallel")) {
-  tune_parallel <- function(cost){
+  numCores <- detectCores()
+  registerDoParallel(cores = round((numCores/2)))
+  tuneresults <- function(cost){
     tuneresult <- foreach(cost = cost, .combine = c) %dopar% 
     {
       set.seed(123)
@@ -40,42 +42,31 @@ if (require("doParallel")) {
     best.cost <- cost[which.min(tuneresult)]
     return(best.cost)
   }
-  
-  numCores <- detectCores()
-  registerDoParallel(cores = round((numCores/2)))
-  
-  print(paste0("Assign ", round((numCores/2)), " cores for the grid search."))
-  print(paste0("Grid search with a wide range, starts at ", date()))
-  best.cost <- tune_parallel(2^(seq(-10, 10, by = 0.5)))
-  print(paste0("Grid search with a wide range, ends at ", date()))
-  print(paste0("The best cost is ", round(best.cost, 6), " after the wide grid search"))
-  print(paste0("Grid search with a small range, starts at ", date()))
-  more.cost <- 2^seq(log2(best.cost) - 0.5, log2(best.cost) + 0.5, by = 0.05)
-  best.cost <- tune_parallel(more.cost)
-  print(paste0("Grid search with a small range, ends at ", date()))
-  print(paste0("The best cost is ", round(best.cost, 6), " after the small grid search"))
-} else {
-  tuneresult <- function(x) {
+} else{
+  numCores <- 2
+  single.tune <- function(cost) {
     set.seed(123)
     mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", 
-               cost = x, probability = TRUE, tunecontrol = tune.control(cross = 5))
+               cost = cost, probability = TRUE, tunecontrol = tune.control(cross = 5))
     return(mod$performances[, c("error")])
   }
-  print(paste("Grid search with a wider range, starts at", date()))
-  wide.range <- 2^(seq(-10, 10, by = 0.5))
-  tune.wide <- sapply(wide.range, tuneresult)
-  best.cost <- wide.range[which.min(tune.wide)]
-  print(paste0("Grid search with a wider range, ends at ", date()))
-  print(paste0("The best cost is ", round(best.cost, 6), " after the wide grid search"))
-  print(paste0("Grid search with a small range, starts at ", date()))
-  
-  small.range <- 2^seq(log2(best.cost) - 0.5, log2(best.cost) + 0.5, by = 0.05)
-  tune.small <- sapply(small.range, tuneresult)
-  best.cost <- small.range[which.min(tune.small)]
-  print(paste0("Grid search with a small range, ends at ", date()))
-  print(paste0("The best cost is ", round(best.cost, 6), " after the small grid search"))
-  
+  tuneresults <- function(cost){
+    return(cost[which.min(sapply(cost, single.tune))])
+  }
 }
+
+print(paste0("Assign ", round((numCores/2)), " cores for the grid search."))
+print(paste0("Grid search with a wide range, starts at ", date()))
+best.cost <- tuneresults(2^(seq(-10, 10, by = 0.5)))
+print(paste0("Grid search with a wide range, ends at ", date()))
+print(paste0("The best cost is ", round(best.cost, 6), " after the wide grid search"))
+print(paste0("Grid search with a small range, starts at ", date()))
+more.cost <- 2^seq(log2(best.cost) - 0.5, log2(best.cost) + 0.5, by = 0.05)
+best.cost <- tuneresults(more.cost)
+print(paste0("Grid search with a small range, ends at ", date()))
+print(paste0("The best cost is ", round(best.cost, 6), " after the small grid search"))
+
+
 # final model
 set.seed(123)
 mymod <- svm(train.x, as.factor(train.y), cost = best.cost, kernel = "linear", probability=TRUE)
@@ -140,4 +131,3 @@ if(!require("ggplot2")) {
   print("Done")
 }
 print(date())
-
