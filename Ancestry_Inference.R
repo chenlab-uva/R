@@ -41,7 +41,7 @@ if (require("doParallel")) {
     best.cost <- cost[which.min(tuneresult)]
     return(best.cost)
   }
-} else{
+} else {
   numCores <- 2
   single.tune <- function(cost) {
     set.seed(123)
