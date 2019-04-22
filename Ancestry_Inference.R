@@ -7,17 +7,13 @@ if( !all(required_packages %in% installed.packages()[,'Package']) ) stop(error_m
 suppressMessages(library(e1071))
 
 # input setting
-# args = commandArgs(TRUE)
-# if( length(args) != 3 ) stop("please provide three arguments (pc file, population file and prefix)")
+args = commandArgs(TRUE)
+if( length(args) != 1 ) stop("please provide one arguments (prefix)")
 
-# pc_name <- args[1]
-# phe_name <- args[2]
-# prefix <- args[3]
-pc_name <- "../ex_data/kg_reclean_update_mega_mdspc.txt"
-phe_name <- "../ex_data/KGcommon_super_pop.txt"
-prefix <- "try2"
-pc <- read.table(pc_name, header = TRUE)
-phe <- read.table(phe_name, header = TRUE)
+prefix <- args[1]
+
+pc <- read.table(paste0(prefix,"pc.txt"), header = TRUE)
+phe <- read.table(paste0(prefix,"_popref.txt"), header = TRUE)
 
 print(paste0("Prepare the PC file and the reference file, starts at ",date()))
 print("Apply 10 PCs to the analysis")
@@ -38,8 +34,7 @@ if (require("doParallel")) {
     tuneresult <- foreach(cost = cost, .combine = c) %dopar% 
     {
       set.seed(123)
-      mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", 
-                 cost = cost, probability = TRUE, tunecontrol = tune.control(cross = 5))
+      mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", cost = cost, probability = TRUE, tunecontrol = tune.control(cross = 5))
       mod$performances[, c("error")]
     }
     best.cost <- cost[which.min(tuneresult)]
@@ -86,13 +81,11 @@ set.seed(123)
 mymod <- svm(train.x, as.factor(train.y), cost = best.cost, kernel = "linear", probability=TRUE)
 
 print(paste0("Predict ancestry information, starts at ", date()))
-
 pred.pop <- predict(mymod, test.data[, !colnames(test.data) %in%c("FID","IID")], probability=TRUE)
 test.data$PRED <- pred.pop
 class.prob <- attr(pred.pop, "probabilities")
 
 print(paste0("Prepare the summary file, starts at ", date()))
-
 orders <- t(apply(class.prob, 1, function(x) order(x,decreasing =T)))
 orders.class <- t(apply(orders, 1, function(x) colnames(class.prob)[x]))
 orders.probs <- t(sapply(1:nrow(class.prob), function(x) class.prob[x, orders[x,]]))
@@ -103,7 +96,6 @@ temp <- apply(check.cumsum, 1, function(x) which(x > 0.65)[1])
 
 PRED_CLASS <- sapply(1:length(temp), function (x) paste(orders.class[x, 1:as.numeric(temp[x])], collapse = ";"))
 PRED_PROB <- sapply(1:length(temp), function (x) paste(round(orders.probs[x, 1:as.numeric(temp[x])], 3), collapse = ";"))
-
 
 pred.out <- cbind(test.data[, c("FID", "IID", "PC1", "PC2")], PRED_CLASS, PRED_PROB, orders.class[, 1:2], round(orders.probs[, 1:2], 3))
 colnames(pred.out)[7:10] <- c("FST", "SEC", "FST_PROB", "SEC_PROB")
