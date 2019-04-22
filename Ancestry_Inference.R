@@ -29,7 +29,7 @@ train.y <- train.phe[, "Population"]
 
 
 # Linear Only
-if (require("doParallel")) {
+if (require("doParallel", quietly = TRUE)) {
   numCores <- detectCores()
   registerDoParallel(cores = round((numCores/2)))
   tuneresults <- function(cost){
@@ -101,7 +101,7 @@ Palette <- c("#1F78B4","#33A02C","#E31A1C","#FF7F00","#6A3D9A","#B15928","#A6CEE
 groups <- length(unique(pred.out$PRED_CLASS))
 cPalette <- Palette[c(1:(groups - 1), 13)]
 
-if(!require("ggplot2")) {
+if(!require("ggplot2", quietly = TRUE)) {
   postscript(paste0(prefix, "_ancestryplot.ps"), paper = "letter", horizontal = T)
   # Predicted
   pred.out$PRED_CLASS <- as.factor(pred.out$PRED_CLASS)
