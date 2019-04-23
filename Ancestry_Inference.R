@@ -1,6 +1,6 @@
 ## king_ancestryplot.R for KING Ancestry plot, by Zhennan Zhu and Wei-Min Chen
 library(e1071)
-prefix="kingmega"
+prefix="king"
 pc <- read.table(paste0(prefix, "pc.txt"), header = TRUE)
 phe <- read.table(paste0(prefix, "_popref.txt"), header = TRUE)
 print(paste("Prepare the PC file and the reference file, starts at ",date()))
