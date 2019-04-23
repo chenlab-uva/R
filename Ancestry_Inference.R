@@ -67,7 +67,7 @@ print(paste0("The best cost is ", round(best.cost, 6), " after the small grid se
 
 
 # final model
-set.seed(123)
+
 mymod <- svm(train.x, as.factor(train.y), cost = best.cost, kernel = "linear", probability=TRUE)
 
 print(paste0("Predict ancestry information, starts at ", date()))
