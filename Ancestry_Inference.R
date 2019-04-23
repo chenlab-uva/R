@@ -1,132 +1,122 @@
-print(date())
-
-# check packages
-required_packages <- c("e1071")
-error_msg <- paste("Please install the following packages:", paste(required_packages, collapse = ", "))
-if( !all(required_packages %in% installed.packages()[,'Package']) ) stop(error_msg)
-suppressMessages(library(e1071))
-
-# input setting
-args = commandArgs(TRUE)
-if( length(args) != 1 ) stop("please provide one arguments (prefix)")
-
-prefix <- args[1]
-
-pc <- read.table(paste0(prefix,"pc.txt"), header = TRUE)
-phe <- read.table(paste0(prefix,"_popref.txt"), header = TRUE)
-
-print(paste0("Prepare the PC file and the reference file, starts at ",date()))
-print("Apply 10 PCs to the analysis")
-print("Choose linear")
-
+## king_ancestryplot.R for KING Ancestry plot, by Zhennan Zhu and Wei-Min Chen
+library(e1071)
+prefix="kingmega"
+pc <- read.table(paste0(prefix, "pc.txt"), header = TRUE)
+phe <- read.table(paste0(prefix, "_popref.txt"), header = TRUE)
+print(paste("Prepare the PC file and the reference file, starts at ",date()))
 pop <- phe[, c("IID", "Population")]
 train.data <- pc[pc$AFF == 1, c(2, 7:16)]
 train.phe <- merge(train.data, pop, by = "IID")
 test.data <- pc[pc$AFF == 2, c(1, 2, 7:16)]
-
 train.x <- train.phe[, !colnames(train.phe) %in% c("Population", "IID")]
 train.y <- train.phe[, "Population"]
-
-
-# Linear Only
-if (require("doParallel", quietly = TRUE)) {
-  numCores <- detectCores()
-  registerDoParallel(cores = round((numCores/2)))
-  tuneresults <- function(cost){
-    tuneresult <- foreach(cost = cost, .combine = c) %dopar% {
-      set.seed(123)
-      mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", cost = cost, probability = TRUE)
-      mod$performances[, c("error")]
-    }
-    best.cost <- cost[which.min(tuneresult)]
-    return(best.cost)
-  }
-} else {
+if(require("doParallel", quietly=TRUE)){
+numCores <- detectCores()
+registerDoParallel(cores = min(round((numCores/2)), 41))
+tuneresults <- function(cost){
+tuneresult <- foreach(cost = cost, .combine = c) %dopar% {
+  set.seed(123)
+  mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", cost = cost, probability = TRUE)
+  mod$performances[,c("error")]
+}
+best.cost <- cost[which.min(tuneresult)]
+return(best.cost)}
+}else{
   numCores <- 2
   single.tune <- function(cost) {
     set.seed(123)
-    mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", 
+    mod = tune(svm, train.x, as.factor(train.y), kernel = "linear",
                cost = cost, probability = TRUE)
-    return(mod$performances[, c("error")])
-  }
+    return(mod$performances[, c("error")])}
   tuneresults <- function(cost){
-    return(cost[which.min(sapply(cost, single.tune))])
-  }
-}
-
+    return(cost[which.min(sapply(cost, single.tune))])}}
 print(paste0("Assign ", round((numCores/2)), " cores for the grid search."))
-print(paste0("Grid search with a wide range, starts at ", date()))
+print(paste("Grid search with a wide range, starts at", date()))
 best.cost <- tuneresults(2^(seq(-10, 10, by = 0.5)))
-print(paste0("Grid search with a wide range, ends at ", date()))
+print(paste("Grid search with a wide range, ends at", date()))
 print(paste0("The best cost is ", round(best.cost, 6), " after the wide grid search"))
-print(paste0("Grid search with a small range, starts at ", date()))
+print(paste("Grid search with a small range, starts at", date()))
+print(paste0("The best cost is ", round(best.cost, 6), " after the wide grid search"))
 more.cost <- 2^seq(log2(best.cost) - 0.5, log2(best.cost) + 0.5, by = 0.05)
 best.cost <- tuneresults(more.cost)
-print(paste0("Grid search with a small range, ends at ", date()))
+print(paste("Grid search with a small range, ends at", date()))
 print(paste0("The best cost is ", round(best.cost, 6), " after the small grid search"))
-
-
-# final model
-
 mymod <- svm(train.x, as.factor(train.y), cost = best.cost, kernel = "linear", probability=TRUE)
-
-print(paste0("Predict ancestry information, starts at ", date()))
+print(paste("Predict ancestry information, start at", date()))
 pred.pop <- predict(mymod, test.data[, !colnames(test.data) %in%c("FID","IID")], probability=TRUE)
 test.data$PRED <- pred.pop
 class.prob <- attr(pred.pop, "probabilities")
-
-print(paste0("Prepare the summary file, starts at ", date()))
+print(paste("Prepare the summary file, starts at", date()))
 orders <- t(apply(class.prob, 1, function(x) order(x,decreasing =T)))
 orders.class <- t(apply(orders, 1, function(x) colnames(class.prob)[x]))
 orders.probs <- t(sapply(1:nrow(class.prob), function(x) class.prob[x, orders[x,]]))
-
-# > 0.65
 check.cumsum <- t(apply(orders.probs, 1, cumsum))
 temp <- apply(check.cumsum, 1, function(x) which(x > 0.65)[1])
-
 PRED_CLASS <- sapply(1:length(temp), function (x) paste(orders.class[x, 1:as.numeric(temp[x])], collapse = ";"))
 PRED_PROB <- sapply(1:length(temp), function (x) paste(round(orders.probs[x, 1:as.numeric(temp[x])], 3), collapse = ";"))
-
 pred.out <- cbind(test.data[, c("FID", "IID", "PC1", "PC2")], PRED_CLASS, PRED_PROB, orders.class[, 1:2], round(orders.probs[, 1:2], 3))
-colnames(pred.out)[7:10] <- c("FST", "SEC", "FST_PROB", "SEC_PROB")
-
+colnames(pred.out)[5:10] <- c("Ancestry", "Pr_Anc", "Anc_1st", "Anc_2nd", "Pr_1st", "Pr_2nd")
 print(paste("summary file is ready ", date()))
-write.table(pred.out, paste0(prefix, "_InferredAncestry.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(pred.out, paste0(prefix, "_InferredAncestry.txt"), sep= " ", quote = FALSE, row.names = FALSE)
 print(paste("Results are saved to", paste0(prefix, "_InferredAncestry.txt")))
-
 print("Generate plots")
-pred.out$PRED_CLASS <- as.character(pred.out$PRED_CLASS)
-pred.out$PRED_CLASS[pred.out$FST_PROB <= 0.65] <- "UNCERTAIN"
+pred.out$Ancestry <- as.character(pred.out$Ancestry)
+pred.out$Ancestry[pred.out$Pr_1st <= 0.65] <- ">1 Pop"
 Palette <- c("#1F78B4","#33A02C","#E31A1C","#FF7F00","#6A3D9A","#B15928","#A6CEE3","#B2DF8A","#FB9A99","#FDBF6F","#CAB2D6","#FFFF99","#999999")
-groups <- length(unique(pred.out$PRED_CLASS))
-cPalette <- Palette[c(1:(groups - 1), 13)]
 
-if(!require("ggplot2", quietly = TRUE)) {
-  postscript(paste0(prefix, "_ancestryplot.ps"), paper = "letter", horizontal = T)
-  # Predicted
-  pred.out$PRED_CLASS <- as.factor(pred.out$PRED_CLASS)
-  plot(pred.out$PC1, pred.out$PC2, col = cPalette[pred.out$PRED_CLASS], xlab = "PC1", ylab = "PC2",
-       main = paste0("Inferred Populations as Ancestry in ", prefix), pch = 16)
-  legend("topright", legend = unique(pred.out$PRED_CLASS), col = unique(cPalette[pred.out$PRED_CLASS]), pch = 16, cex = 1)
-  
-  # Reported
-  plot(train.phe$PC1, train.phe$PC2, col = cPalette[train.phe$Population], xlab = "PC1", ylab = "PC2", 
-       main = "Populations in Reference", pch = 16)
-  legend("topright", legend = unique(train.phe$Population), 
-         col = unique(cPalette[train.phe$Population]), pch = 16, cex = 1)
-  dev.off()
-  print(paste0(prefix, "_ancestryplot.ps is generated."))
-  print("Done")
-} else {
-  postscript(paste0(prefix, "_ancestryplot.ps"), paper = "letter", horizontal = T)
-  p <- ggplot(pred.out, aes(x = PC1, y = PC2, color = PRED_CLASS, label = IID)) 
-  p <- p + geom_point() + labs(color = "") +  scale_colour_manual(values = cPalette) + ggtitle(paste0("Inferred Populations as Ancestry in ", prefix))
-  print(p)
-  p <- ggplot(train.phe, aes(x = PC1, y = PC2, color = Population, label = IID)) 
-  p <- p + geom_point() + labs(color = "") + scale_colour_manual(values = cPalette) + ggtitle("Populations in Reference") + labs(fill = "")
-  print(p)
-  dev.off()
-  print(paste0(prefix, "_ancestryplot.ps is generated."))
-  print("Done")
+
+train.groups <- unique(train.phe$Population)
+pred.colors <- rep(Palette[13],nrow(pred.out))
+
+for (i in 1:length(train.groups)){
+  pred.colors[pred.out$Ancestry==train.groups[i]] <- Palette[i]
 }
-print(date())
+
+train.colors <- rep(0,nrow(train.phe))
+for (i in 1:length(train.groups)){
+  train.colors[train.phe$Population==train.groups[i]] <- Palette[i]
+}
+
+# set xlim and ylim
+x.adjust <- (max(train.phe$PC1, pred.out$PC1) - min(train.phe$PC1, pred.out$PC1))/10
+x.low <- min(train.phe$PC1, pred.out$PC1) - x.adjust
+x.high <- max(train.phe$PC1, pred.out$PC1) + x.adjust
+y.adjust <- (max(train.phe$PC2, pred.out$PC2) - min(train.phe$PC2, pred.out$PC2))/10
+y.low <- min(train.phe$PC2, pred.out$PC2) - y.adjust
+y.high <- max(train.phe$PC2, pred.out$PC2) + y.adjust
+# Generate plots
+postscript(paste0(prefix, "_ancestryplot.ps"), paper="letter", horizontal=T)
+ncols <- min(3, round((length(train.groups) + 1)/2))
+if(!require(ggplot2, quietly=TRUE)) {
+  par(mfrow = c(1, 1))
+  plot(pred.out$PC1, pred.out$PC2, col = pred.colors, xlab = "PC1", ylab = "PC2", 
+       main = paste("Inferred Populations as Ancestry in", prefix), pch = 16)
+  legend("topright", legend = unique(pred.out$Ancestry), col = unique(pred.colors), pch = 16, cex = 1)
+  par(mfrow = c(2, ncols))
+  for (i in unique(pred.out$Ancestry)) {
+    subdata <- subset(pred.out, Ancestry == i)
+    plot(subdata$PC1, subdata$PC2, col = unique(pred.colors)[unique(pred.out$Ancestry) == i], 
+         xlim = c(x.low, x.high), ylim = c(y.low, y.high), xlab = "PC1", ylab = "PC2", main = i)
+  }
+  par(mfrow = c(1, 1))
+  plot(train.phe$PC1, train.phe$PC2, col = train.colors, xlim = c(x.low, x.high), ylim = c(y.low, y.high), 
+       xlab = "PC1", ylab = "PC2", main = "Populations in Reference", pch = 16)
+  legend("topright", legend = unique(train.phe$Population), col = unique(train.colors), pch = 16, cex = 1)
+} else {
+  p <- ggplot(pred.out, aes(x = PC1, y = PC2))
+  p <- p + geom_point(aes(colour = factor(Ancestry, levels = unique(Ancestry)))) + 
+    labs(color = "") + scale_colour_manual(values = unique(pred.colors)) + 
+    ggtitle(paste("Inferred Populations as Ancestry in", prefix))
+  print(p)
+  p <- ggplot(pred.out, aes(x = PC1, y = PC2, colour = factor(Ancestry, levels = unique(Ancestry)))) + 
+    theme(legend.position = "none")
+  p <- p + geom_point() + xlim(x.low, x.high) + ylim(y.low, y.high) + 
+    facet_wrap(~factor(Ancestry, levels = unique(Ancestry)), ncol = min(3, ncols)) + scale_color_manual(values = unique(pred.colors))
+  print(p)
+  p <- ggplot(train.phe, aes(x = PC1, y = PC2))
+  p <- p + geom_point(aes(colour = factor(Population, levels = unique(Population)))) + xlim(x.low, x.high) + ylim(y.low, y.high)
+  p <- p + labs(color = "") + scale_colour_manual(values = unique(train.colors)) + ggtitle("Populations in Reference")
+  print(p)
+  }
+dev.off()
+print(paste0(prefix, "_ancestryplot.ps is generated at ", date()))
