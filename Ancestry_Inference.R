@@ -100,7 +100,7 @@ if (!require(ggplot2, quietly = TRUE)) {
        main = paste("Inferred Populations as Ancestry in", prefix), pch = 16)
   legend("topright", legend = unique(pred.out$Ancestry), col = unique(pred.colors), pch = 16, cex = 1)
   par(mfrow = c(2, ncols))
-  for (i in unique(pred.out$Ancestry)) {
+  for (i in sort(unique(pred.out$Ancestry))) {
     subdata <- subset(pred.out, Ancestry == i)
     plot(subdata$PC1, subdata$PC2, col = unique(pred.colors)[unique(pred.out$Ancestry) == i], 
          xlim = c(x.low, x.high), ylim = c(y.low, y.high), xlab = "PC1", ylab = "PC2", 
@@ -115,15 +115,11 @@ if (!require(ggplot2, quietly = TRUE)) {
   p <- p + geom_point(aes(colour = factor(Ancestry, levels = unique(Ancestry)))) + 
     labs(color = "") + scale_colour_manual(values = unique(pred.colors)) + ggtitle(paste("Inferred Populations as Ancestry in", prefix))
   print(p)
-  labels <- NULL
-  for (i in unique(pred.out$Ancestry)) {
-    one.label <- paste0(i, " (N=", sum(pred.out$Ancestry == i), ")")
-    labels <- c(labels, one.label)
-  }
+  labels <- sapply(sort(unique(pred.out$Ancestry)), function(x) paste0(x, " (N=", sum(pred.out$Ancestry == x), ")"))
   p <- ggplot(pred.out, aes(x = PC1, y = PC2, colour = factor(Ancestry, levels = unique(Ancestry)))) + 
     scale_color_manual(values = unique(pred.colors)) + theme(legend.position = "none")
   p <- p + geom_point() + xlim(x.low, x.high) + ylim(y.low, y.high) + 
-    facet_wrap(~factor(Ancestry, levels = unique(Ancestry), labels = labels), ncol = min(3, ncols))
+    facet_wrap(~factor(Ancestry, levels = sort(unique(Ancestry)), labels = labels), ncol = min(3, ncols))
   print(p)
   p <- ggplot(train.phe, aes(x = PC1, y = PC2))
   p <- p + geom_point(aes(colour = factor(Population, levels = unique(Population)))) + 
