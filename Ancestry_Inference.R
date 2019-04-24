@@ -1,3 +1,4 @@
+## king_ancestryplot.R for KING Ancestry plot, by Zhennan Zhu and Wei-Min Chen
 library(e1071)
 prefix = "king"
 pc <- read.table(paste0(prefix, "pc.txt"), header = TRUE)
