@@ -12,7 +12,7 @@ train.x <- train.phe[, !colnames(train.phe) %in% c("Population", "IID")]
 train.y <- train.phe[, "Population"]
 if (require("doParallel", quietly = TRUE)) {
   numCores <- detectCores()
-  registerDoParallel(cores = min(round((numCores/2)), 41))
+  registerDoParallel(cores = min(round(numCores/2), 41))
   tuneresults <- function(cost) {
     tuneresult <- foreach(cost = cost, .combine = c) %dopar% {
       set.seed(123)
@@ -35,7 +35,7 @@ if (require("doParallel", quietly = TRUE)) {
     return(cost[which.min(sapply(cost, single.tune))])
   }
 }
-print(paste0("Assign ", round((numCores/2)), " cores for the grid search."))
+print(paste0("Assign ", min(round(numCores/2), 41), " cores for the grid search."))
 print(paste("Grid search with a wide range, starts at", date()))
 best.cost <- tuneresults(2^(seq(-10, 10, by = 0.5)))
 print(paste("Grid search with a wide range, ends at", date()))
@@ -46,6 +46,7 @@ more.cost <- 2^seq(log2(best.cost) - 0.5, log2(best.cost) + 0.5, by = 0.05)
 best.cost <- tuneresults(more.cost)
 print(paste("Grid search with a small range, ends at", date()))
 print(paste0("The best cost is ", round(best.cost, 6), " after the small grid search"))
+set.seed(123)
 mymod <- svm(train.x, as.factor(train.y), cost = best.cost, kernel = "linear", probability = TRUE)
 print(paste("Predict ancestry information, start at", date()))
 pred.pop <- predict(mymod, test.data[, !colnames(test.data) %in% c("FID", "IID")], probability = TRUE)
@@ -93,7 +94,7 @@ y.high <- max(train.phe$PC2, pred.out$PC2) + y.adjust
 
 # Generate plots
 postscript(paste0(prefix, "_ancestryplot.ps"), paper = "letter", horizontal = T)
-ncols <- min(3, round(length(unique(pred.out$Ancestry))/2))
+ncols <- min(3, ceiling(length(unique(pred.out$Ancestry))/2))
 if (!require(ggplot2, quietly = TRUE)) {
   par(mfrow = c(1, 1))
   plot(pred.out$PC1, pred.out$PC2, col = pred.colors, xlab = "PC1", ylab = "PC2", 
