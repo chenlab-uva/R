@@ -25,14 +25,11 @@ if (require("doParallel", quietly = TRUE)) {
   }
 } else {
   numCores <- 2
-  single.tune <- function(cost) {
-    set.seed(123)
-    mod = tune(svm, train.x, as.factor(train.y), kernel = "linear", cost = cost, 
-               probability = TRUE)
-    return(mod$performances[, c("error")])
-  }
-  tuneresults <- function(cost) {
-    return(cost[which.min(sapply(cost, single.tune))])
+  tuneresults <- function(cost){
+    set.seed(123) 
+    tune.mod <- tune(svm, train.x, as.factor(train.y), kernel = "linear", ranges=(list(cost=cost)), 
+                     probability = TRUE)
+   return(tune.mod$best.parameters)
   }
 }
 print(paste0("Assign ", min(round(numCores/2), 41), " cores for the grid search."))
