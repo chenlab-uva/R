@@ -106,7 +106,7 @@ if (!require(ggplot2, quietly = TRUE)) {
   par(mfrow = c(1, 1))
   plot(train.phe$PC1, train.phe$PC2, col = train.colors, xlim = c(x.low, x.high), 
        ylim = c(y.low, y.high), xlab = "PC1", ylab = "PC2", main = "Populations in Reference", pch = 16)
-  legend("topright", legend = unique(sort(train.phe$Population)), 
+  legend("topright", legend = sort(unique(train.phe$Population)), 
          col = unique(train.colors)[order(unique(train.phe$Population))], pch = 16, cex = 1)
 } else {
   p <- ggplot(pred.out, aes(x = PC1, y = PC2))
