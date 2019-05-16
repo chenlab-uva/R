@@ -57,7 +57,7 @@ temp <- apply(check.cumsum, 1, function(x) which(x > 0.65)[1])
 pred.class <- sapply(1:length(temp), function(x) paste(orders.class[x, 1:as.numeric(temp[x])], collapse = ";"))
 pred.prob <- sapply(1:length(temp), function(x) paste(round(orders.probs[x, 1:as.numeric(temp[x])], 3), collapse = ";"))
 pred.out <- cbind(test.data[, c("FID", "IID", "PC1", "PC2")], pred.class, pred.prob, 
-                  orders.class[, 1:2], round(orders.probs[, 1:2], 3))
+                  orders.class[, 1], orders.class[, 2], round(orders.probs[, 1], 3), round(orders.probs[, 2],3))
 colnames(pred.out)[5:10] <- c("Ancestry", "Pr_Anc", "Anc_1st", "Anc_2nd", "Pr_1st", "Pr_2nd")
 print(paste("summary file is ready ", date()))
 write.table(pred.out, paste0(prefix, "_InferredAncestry.txt"), quote = FALSE, row.names = FALSE)
