@@ -27,7 +27,7 @@ return(best.cost)}
     set.seed(123)
     tune.mod = tune(svm, train.x, as.factor(train.y), kernel = "linear",
       ranges=(list(cost=cost)), probability = TRUE)
-    return(tune.mod$best.parameters)}}
+    return(tune.mod$best.parameters[1,1])}}
 print(paste("Assign", min(round(numCores/2),41), "cores for the grid search."))
 print(paste("Grid search with a wide range, starts at", date()))
 best.cost <- tuneresults(2^(seq(-10, 10, by = 0.5)))
