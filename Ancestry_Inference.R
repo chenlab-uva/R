@@ -92,8 +92,8 @@ y.high <- max(train.phe$PC2, pred.out$PC2) + y.adjust
 postscript(paste0(prefix, "_ancestryplot.ps"), paper = "letter", horizontal = T)
 ncols <- min(3, ceiling(length(unique(pred.out$Ancestry))/2))
 if (!require(ggplot2, quietly = TRUE)) {
-  plot(pred.out$PC1, pred.out$PC2, col = pred.colors, xlab = "PC1", ylab = "PC2", 
-       main = paste("Inferred Populations as Ancestry in", prefix), pch = 16)
+  plot(pred.out$PC1, pred.out$PC2, col = pred.colors, xlab = "PC1", ylab = "PC2", xlim = c(x.low, x.high), 
+       ylim = c(y.low, y.high), main = paste("Inferred Populations as Ancestry in", prefix), pch = 16)
   legend("topright", legend = sort(unique(pred.out$Ancestry)), col = unique(pred.colors)[order(unique(pred.out$Ancestry))], pch = 16, cex = 1)
   par(mfrow = c(2, ncols))
   for (i in sort(unique(pred.out$Ancestry))) {
@@ -110,7 +110,8 @@ if (!require(ggplot2, quietly = TRUE)) {
 } else {
   p <- ggplot(pred.out, aes(x = PC1, y = PC2))
   p <- p + geom_point(aes(colour = factor(Ancestry, levels = sort(unique(Ancestry))))) + 
-    labs(color = "") + scale_colour_manual(values = unique(pred.colors)[order(unique(pred.out$Ancestry))]) + 
+    xlim(x.low, x.high) + ylim(y.low, y.high) + labs(color = "") +
+    scale_colour_manual(values = unique(pred.colors)[order(unique(pred.out$Ancestry))]) + 
     ggtitle(paste("Inferred Populations as Ancestry in", prefix))
   print(p)
   labels <- sapply(sort(unique(pred.out$Ancestry)), function(x) paste0(x, " (N=", sum(pred.out$Ancestry == x), ")"))
