@@ -5,9 +5,9 @@ pc <- read.table(paste0(prefix, "pc.txt"), header = TRUE)
 phe <- read.table(paste0(prefix, "_popref.txt"), header = TRUE)
 print(paste("Prepare the PC file and the reference file, starts at ", date()))
 pop <- phe[, c("IID", "Population")]
-train.data <- pc[pc$AFF == 1, c(2, 7:16)]
+train.data <- pc[pc$AFF == 1, grep("IID|PC", colnames(pc))]
 train.phe <- merge(train.data, pop, by = "IID")
-test.data <- pc[pc$AFF == 2, c(1, 2, 7:16)]
+test.data <- pc[pc$AFF == 2, grep("FID|IID|PC", colnames(pc))]
 train.x <- train.phe[, !colnames(train.phe) %in% c("Population", "IID")]
 train.y <- train.phe[, "Population"]
 if (require("doParallel", quietly = TRUE)) {
